@@ -1,6 +1,7 @@
 #include "chassis.h"
 #include <tf/transform_datatypes.h> 
 
+
 Chassis::Chassis()
 {
     geometry_msgs::Pose empty;
@@ -11,9 +12,9 @@ Chassis::Chassis()
     empty.orientation.x=0;
     empty.orientation.y=0;
     empty.orientation.z=0;
-
     actual_pose=empty;
     target_pose=empty;
+    controller.setPID(1,0,0);
 }
 
 void Chassis::exec()
@@ -23,14 +24,22 @@ void Chassis::exec()
     ctrl.linear.y=controller.calc_output(target_pose.position.y,actual_pose.position.y);
     ctrl.linear.z=controller.calc_output(target_pose.position.z,actual_pose.position.z); // 无意义 底盘无Z轴自由度
     
-    tf::Quaternion q1;
-    q.setW(target_pose.orientation.w);  
-    q.setX(target_pose.orientation.x);
-    q.setY(target_pose.orientation.y);
-    q.setZ(target_pose.orientation.z);
+    tf::Quaternion q1,q2;
+    q1.setW(target_pose.orientation.w);  q2.setW(actual_pose.orientation.w);
+    q1.setX(target_pose.orientation.x);  q2.setX(actual_pose.orientation.x);
+    q1.setY(target_pose.orientation.y);  q2.setY(actual_pose.orientation.y);
+    q1.setZ(target_pose.orientation.z);  q2.setZ(actual_pose.orientation.z);
 
-    double roll, pitch, yaw;
-    tf::Matrix3x3(q).getRPY(roll, pitch, yaw);
+    double roll1, pitch1, yaw1, roll2, pitch2, yaw2;
+    tf::Matrix3x3(q1).getRPY(roll1, pitch1, yaw1);
+    tf::Matrix3x3(q2).getRPY(roll2, pitch2, yaw2);
+
+    ctrl.angular.x=controller.calc_output(roll1,roll2); // 无意义
+    ctrl.angular.y=controller.calc_output(pitch1,pitch1); // 无意义
+    ctrl.angular.z=controller.calc_output(yaw1,yaw2); 
+
+    geometry_msgs::Twist::ConstPtr ctrlPtr=boost::make_shared<const geometry_msgs::Twist>(ctrl);
+    chassis_move(ctrlPtr);
 }
 
 int Chassis::chassis_serial_init(const std::string &serial_name, const int &baud)
