@@ -30,7 +30,6 @@ double PID::calc_output(double target, double actual)
 
     int_sum += error;
 
-    ROS_INFO("error: %f delta error: %f int_sum %f kp: %f ki %f kd: %f",error,delta_error,int_sum,kp,ki,kd);
     __LIMIT(int_sum, int_max); // 积分限幅
     last_delta_error = delta_error;
 

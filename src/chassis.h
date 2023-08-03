@@ -21,6 +21,7 @@ private:
     serial::Timeout timeout;
     geometry_msgs::Pose actual_pose;
     geometry_msgs::Pose target_pose;
+    bool first_tag;
     PID controller[6];
 public:
     Chassis();

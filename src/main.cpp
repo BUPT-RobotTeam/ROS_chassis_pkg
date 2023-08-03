@@ -14,43 +14,20 @@ void velMsgCallback(const geometry_msgs::Twist::ConstPtr &msg)
     myChassis.chassis_move(msg);
 }
 
-void poseMsgCallback(const geometry_msgs::PoseStamped::ConstPtr &msg)
-{
-    geometry_msgs::PoseStamped curPose,tf_curPose;
-    curPose=*msg;
-    tf2_ros::Buffer tfBuffer;
-    geometry_msgs::TransformStamped imu2base;
-    tf2_ros::TransformListener listener(tfBuffer);
-    try
-    {
-        imu2base=tfBuffer.lookupTransform("base_link","imu_frame",ros::Time(0));
-    }
-    catch(tf2::TransformException &ex)
-    {
-        ROS_WARN("%s",ex.what());
-        return ;
-    }
-    tf2::doTransform(curPose,tf_curPose,imu2base);
-    geometry_msgs::Pose::ConstPtr tf_curPosePtr = boost::make_shared<const geometry_msgs::Pose>(tf_curPose.pose);
-    myChassis.update_chassis_posture(tf_curPosePtr);
-}
-
 int main(int argc,char** argv)
 {
     ros::init(argc, argv, "chassis_node");
     ros::NodeHandle nh;
 
     std::string vel_topic,serial_name,pose_topic;
-    ros::Subscriber vel_sub,pose_sub;
+    ros::Subscriber vel_sub;
     int serial_baud;
     
     nh.getParam("velTopic",vel_topic);
-    nh.getParam("poseTopic",pose_topic);
     nh.getParam("chassisSerialName",serial_name);
     nh.getParam("chassisSerialBaud",serial_baud);
     
     vel_sub=nh.subscribe(vel_topic,10,velMsgCallback);
-    pose_sub=nh.subscribe(pose_topic,10,poseMsgCallback);
 
     if (myChassis.chassis_serial_init(serial_name,serial_baud)==-1) 
     {
@@ -59,10 +36,41 @@ int main(int argc,char** argv)
         return -1; 
     }
 
-    ros::Rate loop_rate(50);
+    ros::Rate loop_rate(100);
     while (ros::ok())
     {
         ros::spinOnce();
+        geometry_msgs::PoseStamped base_pose;
+        geometry_msgs::TransformStamped base_in_world;
+        tf2_ros::Buffer tfBuffer;
+        tf2_ros::TransformListener listener(tfBuffer);
+        try
+        {
+            base_in_world=tfBuffer.lookupTransform("base_link","map",ros::Time(0),ros::Duration(0.3));
+        }
+        catch(const tf2::TransformException &e)
+        {
+            ROS_ERROR("%s",e.what());
+            continue;
+        }
+        base_pose.header=base_in_world.header;
+        base_pose.pose.position.x=base_in_world.transform.translation.x;
+        base_pose.pose.position.y=base_in_world.transform.translation.y;
+        base_pose.pose.position.z=base_in_world.transform.translation.z;
+        base_pose.pose.orientation=base_in_world.transform.rotation;
+
+        tf2::Quaternion q(
+        base_pose.pose.orientation.x,
+        base_pose.pose.orientation.y,
+        base_pose.pose.orientation.z,
+        base_pose.pose.orientation.w);
+        tf2::Matrix3x3 m(q);
+        double roll, pitch, yaw;
+        m.getRPY(roll, pitch, yaw);
+
+        ROS_INFO("x: %f y: %f yaw: %f",base_pose.pose.position.x,base_pose.pose.position.y,yaw);
+        geometry_msgs::Pose::ConstPtr basePosePtr = boost::make_shared<const geometry_msgs::Pose>(base_pose.pose);
+        myChassis.update_chassis_posture(basePosePtr);
         myChassis.exec();
         loop_rate.sleep();
     }

@@ -15,8 +15,9 @@ Chassis::Chassis()
     empty.orientation.z=0;
     actual_pose=empty;
     target_pose=empty;
+    first_tag=false;
     for (int i=0;i<6;i++)
-        controller[i].setPID(1,0,0.5);
+        controller[i].setPID(0.5,0,0.5);
 }
 
 void Chassis::exec()
@@ -68,6 +69,11 @@ int Chassis::chassis_serial_init(const std::string &serial_name, const int &baud
 void Chassis::update_chassis_posture(const geometry_msgs::Pose::ConstPtr &pose)
 {
     actual_pose=*pose;
+    if (!first_tag)
+    {
+        target_pose=*pose;
+        first_tag=true;
+    }
 }
 
 void Chassis::set_target_pose(const geometry_msgs::Pose::ConstPtr &target)

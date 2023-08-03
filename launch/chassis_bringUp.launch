@@ -1,10 +1,8 @@
 <launch>
     <arg name="velTopicArg" default="/cmd_vel" />
-    <arg name="poseTopicArg" default="/tracked_pose" />
     <arg name="chassisSerialNameArg" default="/dev/ttyUSB0" />
     <arg name="chassisSerialBaudArg" default="115200" />
     <param name="velTopic" value="$(arg velTopicArg)" />
-    <param name="poseTopic" value="$(arg poseTopicArg)" />
     <param name="chassisSerialName" value="$(arg chassisSerialNameArg)" />
     <param name="chassisSerialBaud" value="$(arg chassisSerialBaudArg)" />
     <node pkg="chassis" type="chassis_node" name="chassis_node" output="screen" />
