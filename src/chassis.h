@@ -21,7 +21,7 @@ private:
     serial::Timeout timeout;
     geometry_msgs::Pose actual_pose;
     geometry_msgs::Pose target_pose;
-    PID controller;
+    PID controller[6];
 public:
     Chassis();
     void exec();

@@ -1,4 +1,5 @@
 #include "pid.h"
+#include <ros/ros.h>
 
 template<typename T>void __LIMIT(T &a,const T &b)
 {
@@ -8,8 +9,9 @@ template<typename T>void __LIMIT(T &a,const T &b)
 
 PID::PID()
 {
-    kp=ki=kd=int_max=ctrl_max=int_sum=0;
+    kp=ki=kd=int_sum=0;
     last_error=last_delta_error=0;
+    int_max=ctrl_max=200;
 }
 
 double PID::calc_output(double target, double actual)
@@ -28,6 +30,7 @@ double PID::calc_output(double target, double actual)
 
     int_sum += error;
 
+    ROS_INFO("error: %f delta error: %f int_sum %f kp: %f ki %f kd: %f",error,delta_error,int_sum,kp,ki,kd);
     __LIMIT(int_sum, int_max); // 积分限幅
     last_delta_error = delta_error;
 
@@ -38,4 +41,5 @@ double PID::calc_output(double target, double actual)
 
 void PID::setPID(double p, double i, double d)
 {
+    kp=p,ki=i,kd=d;
 }

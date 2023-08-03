@@ -12,6 +12,10 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   urdf
   xacro
+  tf2
+  tf2_ros
+  tf2_msgs
+  tf2_geometry_msgs
   robot_state_publisher
   joint_state_publisher
   joint_state_publisher_gui

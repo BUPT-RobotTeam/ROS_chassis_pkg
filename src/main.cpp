@@ -2,6 +2,10 @@
 #include "chassis.h"
 #include <exception>
 #include <geometry_msgs/PoseStamped.h>
+#include <tf2_ros/transform_listener.h>
+#include <tf2/convert.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+
 
 Chassis myChassis;
 
@@ -12,10 +16,23 @@ void velMsgCallback(const geometry_msgs::Twist::ConstPtr &msg)
 
 void poseMsgCallback(const geometry_msgs::PoseStamped::ConstPtr &msg)
 {
-    geometry_msgs::Pose curPose;
-    curPose=msg->pose;
-    geometry_msgs::Pose::ConstPtr curPosePtr = boost::make_shared<const geometry_msgs::Pose>(curPose);
-    myChassis.update_chassis_posture(curPosePtr);
+    geometry_msgs::PoseStamped curPose,tf_curPose;
+    curPose=*msg;
+    tf2_ros::Buffer tfBuffer;
+    geometry_msgs::TransformStamped imu2base;
+    tf2_ros::TransformListener listener(tfBuffer);
+    try
+    {
+        imu2base=tfBuffer.lookupTransform("base_link","imu_frame",ros::Time(0));
+    }
+    catch(tf2::TransformException &ex)
+    {
+        ROS_WARN("%s",ex.what());
+        return ;
+    }
+    tf2::doTransform(curPose,tf_curPose,imu2base);
+    geometry_msgs::Pose::ConstPtr tf_curPosePtr = boost::make_shared<const geometry_msgs::Pose>(tf_curPose.pose);
+    myChassis.update_chassis_posture(tf_curPosePtr);
 }
 
 int main(int argc,char** argv)
