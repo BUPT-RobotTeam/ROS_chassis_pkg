@@ -22,6 +22,7 @@ private:
     geometry_msgs::Pose actual_pose;
     geometry_msgs::Pose target_pose;
     bool first_tag;
+    std::string global_frame;
     PID controller[6];
 public:
     Chassis();

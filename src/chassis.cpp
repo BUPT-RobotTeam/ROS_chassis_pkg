@@ -1,7 +1,10 @@
 #include "chassis.h"
 #include <tf2/transform_datatypes.h> 
+#include <tf2_ros/transform_listener.h>
 #include <tf2/LinearMath/Matrix3x3.h>
 #include <tf2/LinearMath/Quaternion.h>
+#include <tf2/convert.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 Chassis::Chassis()
 {
@@ -16,32 +19,50 @@ Chassis::Chassis()
     actual_pose=empty;
     target_pose=empty;
     first_tag=false;
+    global_frame="map";
     for (int i=0;i<6;i++)
-        controller[i].setPID(0.5,0,0.5);
+        controller[i].setPID(1.0,0,0.5);
 }
 
 void Chassis::exec()
 {
     geometry_msgs::Twist ctrl;
-    ctrl.linear.x=controller[0].calc_output(target_pose.position.x,actual_pose.position.x);
-    ctrl.linear.y=controller[1].calc_output(target_pose.position.y,actual_pose.position.y);
-    ctrl.linear.z=controller[2].calc_output(target_pose.position.z,actual_pose.position.z); // 无意义 底盘无Z轴自由度
+
+    geometry_msgs::Pose target_in_base;
+    geometry_msgs::TransformStamped map2base;
+    tf2_ros::Buffer tfBuffer;
+    tf2_ros::TransformListener listener(tfBuffer);
+    try
+    {
+        map2base=tfBuffer.lookupTransform("base_link",global_frame,ros::Time(0),ros::Duration(0.3));
+    }
+    catch(const tf2::TransformException &e)
+    {
+        ROS_ERROR("%s",e.what());
+        return ;
+    }
     
+    tf2::doTransform(target_pose,target_in_base,map2base);
+
+    ctrl.linear.x=controller[0].calc_output(target_in_base.position.x,0);
+    ctrl.linear.y=controller[1].calc_output(target_in_base.position.y,0); // 无意义 底盘无Y轴自由度
+    ctrl.linear.z=controller[2].calc_output(target_in_base.position.z,0); // 无意义 底盘无Z轴自由度
     
+
     tf2::Quaternion q1,q2;
-    q1.setW(target_pose.orientation.w);  q2.setW(actual_pose.orientation.w);
-    q1.setX(target_pose.orientation.x);  q2.setX(actual_pose.orientation.x);
-    q1.setY(target_pose.orientation.y);  q2.setY(actual_pose.orientation.y);
-    q1.setZ(target_pose.orientation.z);  q2.setZ(actual_pose.orientation.z);
+    q1.setW(target_in_base.orientation.w);  
+    q1.setX(target_in_base.orientation.x);  
+    q1.setY(target_in_base.orientation.y);  
+    q1.setZ(target_in_base.orientation.z);  
 
-    double roll1, pitch1, yaw1, roll2, pitch2, yaw2;
-    tf2::Matrix3x3(q1).getRPY(roll1, pitch1, yaw1);
-    tf2::Matrix3x3(q2).getRPY(roll2, pitch2, yaw2);
+    double roll, pitch, yaw;
+    tf2::Matrix3x3(q1).getRPY(roll, pitch, yaw);
 
-    ctrl.angular.x=controller[3].calc_output(roll1,roll2); // 无意义
-    ctrl.angular.y=controller[4].calc_output(pitch1,pitch1); // 无意义
-    ctrl.angular.z=controller[5].calc_output(yaw1,yaw2); 
+    ctrl.angular.x=controller[3].calc_output(roll,0); // 无意义
+    ctrl.angular.y=controller[4].calc_output(pitch,0); // 无意义
+    ctrl.angular.z=controller[5].calc_output(yaw,0); 
 
+    ROS_INFO("x: %f y: %f yaw: %f",target_in_base.position.x,target_in_base.position.y,yaw);
     ROS_INFO("Sending the velocity. x: %f yaw: %f",ctrl.linear.x,ctrl.angular.z);
     geometry_msgs::Twist::ConstPtr ctrlPtr=boost::make_shared<const geometry_msgs::Twist>(ctrl);
     chassis_move(ctrlPtr);
