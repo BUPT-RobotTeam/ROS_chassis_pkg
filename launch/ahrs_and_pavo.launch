@@ -1,0 +1,4 @@
+<launch>
+    <include file="$(find fdilink_ahrs)/launch/ahrs_data.launch"></include>
+    <include file="$(find pavo_ros)/launch/pavo_scan.launch"></include>
+</launch>

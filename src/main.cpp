@@ -46,7 +46,7 @@ int main(int argc,char** argv)
         tf2_ros::TransformListener listener(tfBuffer);
         try
         {
-            base_in_world=tfBuffer.lookupTransform("base_link","map",ros::Time(0),ros::Duration(0.3));
+            base_in_world=tfBuffer.lookupTransform("base_link","map",ros::Time(0),ros::Duration(0.2));
         }
         catch(const tf2::TransformException &e)
         {
@@ -71,7 +71,7 @@ int main(int argc,char** argv)
         ROS_INFO("x: %f y: %f yaw: %f",base_pose.pose.position.x,base_pose.pose.position.y,yaw);
         geometry_msgs::Pose::ConstPtr basePosePtr = boost::make_shared<const geometry_msgs::Pose>(base_pose.pose);
         myChassis.update_chassis_posture(basePosePtr);
-        myChassis.exec();
+        // myChassis.exec();
         loop_rate.sleep();
     }
     return 0;

@@ -34,7 +34,7 @@ void Chassis::exec()
     tf2_ros::TransformListener listener(tfBuffer);
     try
     {
-        map2base=tfBuffer.lookupTransform("base_link",global_frame,ros::Time(0),ros::Duration(0.3));
+        map2base=tfBuffer.lookupTransform("base_link",global_frame,ros::Time(0),ros::Duration(0.2));
     }
     catch(const tf2::TransformException &e)
     {

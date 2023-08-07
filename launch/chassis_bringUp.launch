@@ -5,5 +5,7 @@
     <param name="velTopic" value="$(arg velTopicArg)" />
     <param name="chassisSerialName" value="$(arg chassisSerialNameArg)" />
     <param name="chassisSerialBaud" value="$(arg chassisSerialBaudArg)" />
+    <include file="$(find cartographer_ros)/launch/revo_ld_imu.launch"></include>
     <node pkg="chassis" type="chassis_node" name="chassis_node" output="screen" />
+    <include file="$(find simple_planner)/launch/planner.launch"></include>
 </launch>
